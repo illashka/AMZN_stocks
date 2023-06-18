@@ -1,0 +1,85 @@
+```{r}
+install.packages('xlsx')
+install.packages('forecast')
+install.packages('ggplot2')
+install.packages('MLmetrics')
+install.packages('dplyr')
+install.packages('lubridate')
+install.packages('tseries')
+install.packages('openxlsx')
+```
+```{r}
+# library(xlsx)
+library(forecast)
+library(ggplot2)
+library(MLmetrics)
+library(dplyr)
+library(lubridate)
+library(tseries)
+library(openxlsx)
+```
+
+```{r}
+# Импортируем данные
+stocks = read.xlsx("AMZN.xlsx", sheet = 1, colNames = TRUE)
+stocks
+```
+
+```{r}
+# Приводим данные в порядок
+stocks = stocks %>% select(Date, Open)
+# Преобразуем во временной ряд
+stocksts = ts(stocks$Open, start=c(2012, 12), end=c(2022, 11), frequency = 12)
+# Отображаем данные
+plot(stocksts, ylab = "Цена, $", main = "Стоимость акций Amazon с 2012 по конец 2022 года")
+```
+```{r}
+stocks
+```
+```{r}
+# Проверка ряда на полную автокореляцию
+acf(stocksts)
+```
+
+```{r}
+# Проверим ряд на частичную корреляцию
+pacf(stocksts)
+```
+```{R}
+# Проведем тест Дики-Фуллера
+adf.test(stocksts)
+```
+
+```{R}
+stocksts_diff <- diff(stocksts, differences = 1)
+```
+```{r}
+# Подбираем наилучшую модель, делаем ряд стационарным
+stocksmodel = auto.arima(stocksts, ic="aicc", trace = TRUE)
+```
+```{R}
+stocksmodel
+```
+```{r}
+# 1.Проверка модели на полную автокореляцию
+acf(ts(stocksmodel$residuals))
+```
+
+```{r}
+# 2. Частичная корреляция модели
+pacf(ts(stocksmodel$residuals))
+```
+
+```{r}
+# 3. Тест Дики-Фулера
+adf.test(ts(stocksmodel$residuals))
+stocksforecast = forecast(stocksmodel, level=c(80, 95), h=12)
+stocksforecast
+```
+
+```{r}
+plot(stocksforecast, ylab = "Цена, $", xlab = "Дата", main = "Стоимость акций Amazon с 2012 по конец 2023 года")
+```
+```{r}
+stocksforecast
+```
